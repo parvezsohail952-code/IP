@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insider Threat Detection Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #ffffff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #00d4ff, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+        
+        .metric-label {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-unit {
+            font-size: 0.5em;
+            color: #a0a0a0;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .chart-title {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+        
+        .alerts-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .alert-item {
+            background: rgba(255, 50, 50, 0.1);
+            border-left: 4px solid #ff3232;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .alert-item:hover {
+            background: rgba(255, 50, 50, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .alert-critical {
+            border-left-color: #ff0000;
+            background: rgba(255, 0, 0, 0.15);
+        }
+        
+        .alert-high {
+            border-left-color: #ff6600;
+            background: rgba(255, 102, 0, 0.15);
+        }
+        
+        .alert-user {
+            font-weight: bold;
+            color: #00d4ff;
+            font-size: 1.1em;
+        }
+        
+        .alert-score {
+            color: #ff3232;
+            font-weight: bold;
+        }
+        
+        .risk-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .risk-critical {
+            background: rgba(255, 0, 0, 0.3);
+            color: #ff6666;
+        }
+        
+        .risk-high {
+            background: rgba(255, 102, 0, 0.3);
+            color: #ffaa66;
+        }
+        
+        .status-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Insider Threat Detection Dashboard</h1>
+            <p class="subtitle">Behavior-Based Security for Encrypted Networks</p>
+        </header>
+        
+        <div class="status-bar">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="status-indicator"></div>
+                <span>System Status: Active</span>
+            </div>
+            <div>Last Updated: <span id="lastUpdate"></span></div>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Detection Accuracy</div>
+                <div class="metric-value" id="accuracy">33.3<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Precision</div>
+                <div class="metric-value" id="precision">33.3<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Recall (TPR)</div>
+                <div class="metric-value" id="recall">100<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">F1-Score</div>
+                <div class="metric-value" id="f1score">50.0<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">False Positive Rate</div>
+                <div class="metric-value" id="fpr">100<span class="metric-unit">%</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Mean Time to Detect</div>
+                <div class="metric-value" id="mttd">6.7<span class="metric-unit">ms</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Users Monitored</div>
+                <div class="metric-value" id="users">6</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Threats</div>
+                <div class="metric-value" id="threats" style="color: #ff3232;">2</div>
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="chart-container">
+                <div class="chart-title">📊 Anomaly Score Distribution</div>
+                <div id="anomalyScorePlot"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">🎯 Confusion Matrix</div>
+                <div id="confusionMatrix"></div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">📈 Behavioral Feature Comparison</div>
+            <div id="featureComparison"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">🕐 Temporal Activity Patterns</div>
+            <div id="temporalPattern"></div>
+        </div>
+        
+        <div class="alerts-section">
+            <h2 class="chart-title">🚨 Active Threat Alerts</h2>
+            <div id="alertsList"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Update timestamp
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
+        
+        // Simulated detection data
+        const users = ['alice', 'bob', 'charlie', 'david', 'eve', 'helen'];
+        const anomalyScores = [0.5282, 0.5280, 0.5661, 0.5464, 0.5693, 0.5620];
+        const isMalicious = [false, false, false, false, true, true];
+        const riskLevels = ['HIGH', 'HIGH', 'HIGH', 'HIGH', 'HIGH', 'HIGH'];
+        
+        // 1. Anomaly Score Distribution
+        const anomalyTrace = {
+            x: users,
+            y: anomalyScores,
+            type: 'bar',
+            marker: {
+                color: anomalyScores.map((score, i) => 
+                    isMalicious[i] ? 'rgba(255, 50, 50, 0.8)' : 'rgba(0, 212, 255, 0.6)'
+                ),
+                line: {
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    width: 1
+                }
+            },
+            text: anomalyScores.map(s => s.toFixed(4)),
+            textposition: 'outside',
+            textfont: { color: '#ffffff' }
+        };
+        
+        const anomalyLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#ffffff' },
+            xaxis: { 
+                gridcolor: 'rgba(255,255,255,0.1)',
+                title: 'User'
+            },
+            yaxis: { 
+                gridcolor: 'rgba(255,255,255,0.1)',
+                title: 'Anomaly Score',
+                range: [0, 0.8]
+            },
+            margin: { t: 20, b: 50, l: 60, r: 20 },
+            hovermode: 'closest'
+        };
+        
+        Plotly.newPlot('anomalyScorePlot', [anomalyTrace], anomalyLayout, {responsive: true});
+        
+        // 2. Confusion Matrix
+        const confusionData = [{
+            z: [[0, 4], [0, 2]],
+            x: ['Predicted Normal', 'Predicted Threat'],
+            y: ['Actual Normal', 'Actual Threat'],
+            type: 'heatmap',
+            colorscale: [
+                [0, 'rgba(0, 212, 255, 0.3)'],
+                [1, 'rgba(255, 50, 50, 0.8)']
+            ],
+            text: [[0, 4], [0, 2]],
+            texttemplate: '%{text}',
+            textfont: { size: 20, color: '#ffffff' },
+            showscale: false
+        }];
+        
+        const confusionLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#ffffff' },
+            xaxis: { side: 'bottom' },
+            yaxis: { side: 'left' },
+            margin: { t: 20, b: 80, l: 100, r: 20 }
+        };
+        
+        Plotly.newPlot('confusionMatrix', confusionData, confusionLayout, {responsive: true});
+        
+        // 3. Feature Comparison (Radar Chart)
+        const featureData = [
+            {
+                type: 'scatterpolar',
+                r: [0.35, 59114, 799, 1.0, 300],
+                theta: ['Work Hours Ratio', 'Avg Bytes', 'Unique Destinations', 'External Ratio', 'Avg Duration'],
+                fill: 'toself',
+                name: 'Normal (Alice)',
+                marker: { color: 'rgba(0, 212, 255, 0.6)' }
+            },
+            {
+                type: 'scatterpolar',
+                r: [0.20, 150000, 50, 0.9, 1800],
+                theta: ['Work Hours Ratio', 'Avg Bytes', 'Unique Destinations', 'External Ratio', 'Avg Duration'],
+                fill: 'toself',
+                name: 'Threat (Eve)',
+                marker: { color: 'rgba(255, 50, 50, 0.8)' }
+            }
+        ];
+        
+        const featureLayout = {
+            polar: {
+                radialaxis: {
+                    visible: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    color: '#ffffff'
+                },
+                angularaxis: {
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    color: '#ffffff'
+                }
+            },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#ffffff' },
+            showlegend: true,
+            legend: {
+                font: { color: '#ffffff' }
+            },
+            margin: { t: 20, b: 20, l: 80, r: 80 }
+        };
+        
+        Plotly.newPlot('featureComparison', featureData, featureLayout, {responsive: true});
+        
+        // 4. Temporal Pattern
+        const hours = Array.from({length: 24}, (_, i) => i);
+        const normalActivity = hours.map(h => {
+            if (h >= 9 && h <= 17) return Math.random() * 50 + 30;
+            return Math.random() * 5;
+        });
+        const maliciousActivity = hours.map(h => {
+            if (h >= 22 || h <= 4) return Math.random() * 80 + 40;
+            return Math.random() * 10;
+        });
+        
+        const temporalData = [
+            {
+                x: hours,
+                y: normalActivity,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Normal User',
+                line: { color: 'rgba(0, 212, 255, 0.8)', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(0, 212, 255, 0.2)'
+            },
+            {
+                x: hours,
+                y: maliciousActivity,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Insider Threat',
+                line: { color: 'rgba(255, 50, 50, 0.8)', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(255, 50, 50, 0.2)'
+            }
+        ];
+        
+        const temporalLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#ffffff' },
+            xaxis: { 
+                gridcolor: 'rgba(255,255,255,0.1)',
+                title: 'Hour of Day',
+                tickvals: [0, 6, 12, 18, 24]
+            },
+            yaxis: { 
+                gridcolor: 'rgba(255,255,255,0.1)',
+                title: 'Flow Count'
+            },
+            margin: { t: 20, b: 50, l: 60, r: 20 },
+            showlegend: true,
+            legend: {
+                font: { color: '#ffffff' }
+            }
+        };
+        
+        Plotly.newPlot('temporalPattern', temporalData, temporalLayout, {responsive: true});
+        
+        // 5. Generate Alerts
+        const alerts = [
+            {
+                user: 'eve',
+                score: 0.5693,
+                risk: 'HIGH',
+                indicators: ['Unusual off-hours activity', 'Large data transfers', 'High external communication'],
+                timestamp: new Date().toLocaleString()
+            },
+            {
+                user: 'helen',
+                score: 0.5620,
+                risk: 'HIGH',
+                indicators: ['High flow rate (possible scanning)', 'Suspicious destination diversity'],
+                timestamp: new Date().toLocaleString()
+            }
+        ];
+        
+        const alertsHTML = alerts.map(alert => `
+            <div class="alert-item alert-${alert.risk.toLowerCase()}">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span class="alert-user">👤 ${alert.user.toUpperCase()}</span>
+                    <span class="alert-score">⚠️ Score: ${alert.score.toFixed(4)}</span>
+                    <span class="risk-badge risk-${alert.risk.toLowerCase()}">${alert.risk}</span>
+                </div>
+                <div style="color: #a0a0a0; font-size: 0.9em; margin-bottom: 8px;">
+                    🕐 ${alert.timestamp}
+                </div>
+                <div style="color: #ffcc00;">
+                    <strong>Behavioral Indicators:</strong>
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        ${alert.indicators.map(ind => `<li>${ind}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('alertsList').innerHTML = alertsHTML;
+        
+        // Add animation to metric cards on load
+        const metricCards = document.querySelectorAll('.metric-card');
+        metricCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 50);
+            }, index * 100);
+        });
+    </script>
+</body>
+</html>
